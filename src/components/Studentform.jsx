@@ -16,6 +16,17 @@ export default function Studentform() {
         });
     };
 
+    // f= (name:"", email:"", age:"", course:"", batch:"") => {
+    //     return {
+    //         name,
+    //         email,
+    //         age,
+    //         course,
+    //         batch
+    //     };
+    // };
+
+
     const handleSubmit = (e) => {
         e.preventDefault();
         // Handle form submission (e.g., send data to an API)
