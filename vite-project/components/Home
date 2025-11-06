@@ -1,0 +1,117 @@
+// src/Home.jsx
+import React, { useState, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
+import "./Home.css";
+
+export default function Home() {
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      setError(null);
+
+      // Resolve API URL for Vite (import.meta.env) OR CRA (process.env.REACT_APP_API_URL)
+      const apiUrl =
+        (typeof import.meta !== "undefined" &&
+          import.meta.env &&
+          import.meta.env.VITE_API_URL) ||
+        process.env.REACT_APP_API_URL ||
+        "/students.json";
+
+      try {
+        const response = await fetch(apiUrl);
+
+        // If fetch failed with network error, response will be undefined -> caught below.
+        if (!response.ok) {
+          throw new Error(`Network response was not ok (status ${response.status})`);
+        }
+
+        const data = await response.json();
+
+        // Ensure we have an array
+        if (!Array.isArray(data)) {
+          throw new Error("Expected an array of students from the API");
+        }
+
+        // Basic validation and normalization
+        const normalized = data
+          .filter((s) => s && (s.id || s.id === 0) && s.name) // ensure id and name exist
+          .map((s) => ({
+            id: s.id,
+            name: String(s.name),
+            email: s.email ? String(s.email) : "no-email@example.com",
+            age: s.age ?? "",
+          }));
+
+        setStudents(normalized);
+      } catch (err) {
+        console.error("Error fetching students:", err);
+        setError(err.message || "Unknown error");
+        setStudents([]);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+
+  // Handlers wrapped with useCallback to avoid re-creation on each render
+  const handleEdit = useCallback((id) => {
+    // TODO: navigate to edit page or open modal
+    console.log("Edit student with id:", id);
+  }, []);
+
+  const handleDelete = useCallback((id) => {
+    // Optimistic UI update example
+    console.log("Delete student with id:", id);
+    setStudents((prev) => prev.filter((s) => s.id !== id));
+    // If you have an API, call it here and rollback on failure if necessary.
+  }, []);
+
+  return (
+    <div className="home">
+      <h1>Student List</h1>
+
+      <Link to="/add-student" className="add-student">
+        Add Student
+      </Link>
+
+      {loading && <p className="status">Loading students…</p>}
+      {error && <p className="error">Error: {error}</p>}
+
+      <div className="student-cards">
+        {!loading && students.length === 0 && !error ? (
+          <p className="empty">No students found.</p>
+        ) : (
+          students.map((student) => (
+            <Card
+              key={student.id}
+              student={student}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          ))
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* Card subcomponent */
+function Card({ student, onEdit, onDelete }) {
+  return (
+    <article className="card" tabIndex="0" aria-label={`Student ${student.name}`}>
+      <h2>{student.name}</h2>
+      <p>
+        <strong>Email:</strong> {student.email}
+      </p>
+      <p>
+        <strong>Age:</strong> {student.age}
+      </p>
+      <div className="card-actions">
+        <button
+          onClick={() => onEdit(student.id)}
+          aria-label={`Edit ${student.name}`}
+        >
